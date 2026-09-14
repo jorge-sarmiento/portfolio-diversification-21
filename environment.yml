@@ -1,0 +1,33 @@
+# Solver stack used to produce the results of the article (Windows, conda defaults channel).
+# Reproduces them bit for bit. Build strings are pinned on purpose: a different build of
+# the same NumPy/SciPy version can change the linear algebra at the last bits. Installing
+# from PyPI instead (requirements.txt) links OpenBLAS and shifts returns by about 1e-6.
+#
+#   conda env create -f environment.yml
+#   conda activate portfolio-21
+name: portfolio-21
+channels:
+  - defaults
+dependencies:
+  - python=3.13.9=h260b955_100_cp313
+  - blas=1.0=mkl
+  - mkl=2025.0.0=h5da7b33_930
+  - mkl-service=2.5.2=py313h0b37514_0
+  - mkl_fft=2.1.1=py313hbc2a22c_0
+  - mkl_random=1.3.0=py313h42c1672_0
+  - intel-openmp=2025.0.0=haa95532_1164
+  - tbb=2022.0.0=h214f63a_0
+  - numpy=2.3.5=py313h050da96_0
+  - numpy-base=2.3.5=py313h1e017a8_0
+  - scipy=1.16.3=py313hbd6d557_0
+  - pandas=2.3.3=py313h42c1672_1
+  - bottleneck=1.6.0=py313h18b77b3_0
+  - numexpr=2.14.2=py313h5dbb76a_0
+  - scikit-learn=1.7.2=py313h7f7e138_0
+  - matplotlib-base=3.10.6=py313h26e45b9_1
+  - joblib=1.5.3=py313haa95532_0
+  - threadpoolctl=3.5.0=py313h4442805_0
+  - pip
+  - pip:
+      - clarabel==0.11.1
+      - qpsolvers==4.9.0

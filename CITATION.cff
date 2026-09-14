@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: "Portfolio Diversification Revisited: replication code"
+message: "If you use this software, please cite the article below."
+type: software
+authors:
+  - family-names: Sarmiento-Laya
+    given-names: Jorge Rafael
+    affiliation: Universidad Loyola Andalucía, Córdoba, Spain
+    email: jrsarmientolaya@al.uloyola.es
+  - family-names: Fernández-Navarro
+    given-names: Francisco
+    affiliation: Universidad de Málaga, Málaga, Spain
+license: MIT
+repository-code: "https://github.com/jorge-sarmiento/portfolio-diversification-21"
+preferred-citation:
+  type: article
+  title: "Portfolio Diversification Revisited: An Out-of-Sample Comparison of Twenty-One Strategies Across Asset Universes and Rebalancing Frequencies"
+  authors:
+    - family-names: Sarmiento-Laya
+      given-names: Jorge Rafael
+    - family-names: Fernández-Navarro
+      given-names: Francisco
+  journal: Mathematics
+  year: 2026
+  notes: Manuscript submitted; the DOI will be added on acceptance.

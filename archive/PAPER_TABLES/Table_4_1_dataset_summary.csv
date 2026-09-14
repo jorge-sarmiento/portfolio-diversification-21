@@ -1,0 +1,4 @@
+Dataset,N Assets,Observations,Start Date,End Date,Frequency,IS Obs,OOS Obs
+Dow_Jones_30,29,57,2019-03-20,2023-12-31,Monthly,39,18
+Global_ETFs,14,107,2015-01-02,2023-12-31,Monthly,74,33
+Tech_Sector,12,101,2015-07-06,2023-12-31,Monthly,70,31

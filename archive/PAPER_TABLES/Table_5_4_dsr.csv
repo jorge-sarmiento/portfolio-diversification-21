@@ -1,0 +1,23 @@
+Block,Strategy,Full Name,Dow_Jones_30,Global_ETFs,Tech_Sector
+1,EW,Equally Weighted,,,
+1,GMR,Global Max Return,,,
+2,GMV,Global Min Variance,,,
+2,MV,Mean-Variance,0.597,0.551,0.481
+2,MSV,Mean Squared Variance,0.485,0.485,0.642
+2,SemiV,Mean-Semivariance,0.727,0.736,0.575
+3,CVaR,Min-CVaR,0.614,0.473,0.83
+3,MAD,Mean-Abs. Deviation,0.468,0.268,0.272
+4,WUBC_Alt,Weight-Constr. MV,0.449,0.351,0.498
+4,WLBC,Weight Lower-Bound,0.505,0.516,0.501
+4,WUBC,Weight Upper-Bound,0.581,0.341,0.467
+5,MD,Max Diversification,,,
+5,DMV,Diversified MV,0.556,0.387,0.383
+5,DMV_Yager,DMV-Yager,0.562,0.338,0.444
+5,DMV_Return,DMV-Return,0.748,0.626,0.344
+5,DMV_Vars,DMV-Vars,0.665,0.403,0.377
+5,EWMV,EWMV Mixture,0.61,0.377,0.504
+6,SRF_LP,Soft Return-Floor LP,,,
+6,FSD,First-Order SD,,,
+6,SSD,Second-Order SD,,,
+7,RP,Risk Parity (ERC),,,
+7,HRP,Hierarchical RP,,,

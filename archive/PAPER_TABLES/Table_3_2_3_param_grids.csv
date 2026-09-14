@@ -1,0 +1,23 @@
+Block,Strategy,Full Name,Grid,Combinations,Criterion
+1,EW,Equally Weighted,—,0,—
+1,GMR,Global Max Return,—,0,—
+2,GMV,Global Min Variance,—,0,—
+2,MSV,Mean Squared Variance,"λ ∈ {0.1, 0.3, 0.5, 0.7, 0.9}",5,IS Sharpe
+2,MV,Mean-Variance,"λ ∈ {0.5, 2.0, 10.0}",3,IS Sharpe
+2,SemiV,Mean-Semivariance,"λ ∈ {0.1, 0.3, 0.5, 0.7, 0.9}",5,IS Sharpe
+3,CVaR,Min-CVaR,"α ∈ {0.90, 0.95, 0.99}",3,IS Sharpe
+3,MAD,Mean-Abs. Deviation,"λ ∈ {0.5, 2.0, 10.0}",3,IS Sharpe
+4,WLBC,Weight Lower-Bound,"λ ∈ {0.5, 2.0, 10.0}; lb ∈ {0.01, 0.02, 0.05}",9,IS Sharpe
+4,WUBC,Weight Upper-Bound,"λ ∈ {0.5, 2.0, 10.0}; ub ∈ {0.10, 0.20, 0.30}",9,IS Sharpe
+4,WUBC_Alt,Weight-Constr. MV,"λ ∈ {0.5, 2.0, 10.0}; lb ∈ {0.01, 0.02, 0.05}; ub ∈ {0.10, 0.20, 0.30}",27,IS Sharpe
+5,DMV,Diversified MV,"λ ∈ {0.5, 2.0, 10.0}; δ ∈ {0.1, 0.5, 2.0}",9,IS Sharpe
+5,DMV_Return,DMV-Return,"λ ∈ {0.5, 2.0, 10.0}; δ ∈ {0.1, 0.5, 2.0}",9,IS Sharpe
+5,DMV_Vars,DMV-Vars,"λ ∈ {0.5, 2.0, 10.0}; δ ∈ {0.1, 0.5, 2.0}",9,IS Sharpe
+5,DMV_Yager,DMV-Yager,"λ ∈ {0.5, 2.0, 10.0}; δ ∈ {0.1, 0.5, 2.0}",9,IS Sharpe
+5,EWMV,EWMV Mixture,"λ ∈ {0.5, 2.0, 10.0}; δ ∈ {0.1, 0.3, 0.5, 0.7, 0.9}",15,IS Sharpe
+5,MD,Max Diversification,—,0,—
+6,FSD,First-Order SD,—,0,—
+6,SRF_LP,Soft Return-Floor LP,—,0,—
+6,SSD,Second-Order SD,—,0,—
+7,HRP,Hierarchical RP,—,0,—
+7,RP,Risk Parity (ERC),—,0,—

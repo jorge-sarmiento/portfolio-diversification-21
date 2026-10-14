@@ -11,6 +11,7 @@ from scipy.optimize import minimize, LinearConstraint, Bounds
 from qpsolvers import solve_qp
 from src.strategies.base import BaseStrategy
 
+
 class EquallyWeighted(BaseStrategy):
     """
     Equally weighted portfolio (EW), Eq. (3) of the paper.

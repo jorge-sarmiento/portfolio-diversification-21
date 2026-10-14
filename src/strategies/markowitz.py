@@ -3,7 +3,7 @@ Mean-variance family: Blocks 2 and 4 of the paper.
 
     MV    (Eq. 6)   mean-variance with absorbed lambda
     SemiV (Eq. 8)   mean-semivariance on the semi-covariance matrix of Eq. (7)
-    MVN   (Eq. 9)   mean squared variance-normalised (non-convex)
+    MVN   (Eq. 9)   mean squared variance-normalised (non-convex), on excess returns
     WLBC  (Eq. 12)  MV with a lower bound on every weight
     WUBC  (Eq. 13)  MV with an upper bound on every weight
     WCMV  (Eq. 14)  MV with both bounds
@@ -55,62 +55,87 @@ class MeanVariance(BaseStrategy):
         return w
 
 
+def project_simplex(y: np.ndarray) -> np.ndarray:
+    """
+    Euclidean projection onto the simplex {w >= 0, sum(w) = 1}.
+
+    Algorithm 1 of Wang and Carreira-Perpiñán (2013):
+
+        sort y into u_1 >= u_2 >= ... >= u_N
+        rho = max{ j : u_j + (1 - sum_{i<=j} u_i) / j > 0 }
+        lam = (1 - sum_{i<=rho} u_i) / rho
+        w_i = max(y_i + lam, 0)
+    """
+    y = np.asarray(y, dtype=float)
+    u = np.sort(y)[::-1]
+    shift = (1.0 - np.cumsum(u)) / np.arange(1, len(y) + 1)
+    rho = np.flatnonzero(u + shift > 0)[-1]
+    return np.maximum(y + shift[rho], 0.0)
+
+
 class MeanSquaredVariance(MeanVariance):
     """
-    Mean Squared Variance-Normalised portfolio (MVN), Eq. (9) of the paper,
-    after Fernández-Navarro et al. (2021).
+    Mean Squared Variance-Normalised portfolio (MVN), Eq. (9) of the paper.
 
-    Objective:
-        min_w  lambda*w'Sigma*w - (1-lambda)*(w'mu)^2
-        s.t.   sum(w) = 1,  w >= 0
+        min_w  λ w'Σw - (1 - λ)(w'μ)²     s.t.  Σw_i = 1,  w_i ≥ 0
 
-    Matrix form:
-        min_w  (1/2)*w'Hw,   H = 2*(lambda*Sigma - (1-lambda)*mu*mu')
+    μ and Σ are the annualised mean and covariance of the returns in excess
+    of the risk-free rate (the engine supplies them to strategies that set
+    excess_return_inputs). In matrix form the objective is (1/2) w'Hw with
+    H = 2(λΣ - (1 - λ)μμ'), which is generally indefinite for 0 < λ < 1, so
+    the problem is non-convex.
 
-    H is generally indefinite for 0 < lambda < 1, so the problem is non-convex.
-    Fernández-Navarro et al. (2021) give a mixed-integer linear programming
-    formulation; here the problem is solved with differential evolution, as
-    described in Section 3.2 of the article.
-
-    Solver (MVN*, see README): SciPy differential evolution over the box
-    [0, 1]^N; the budget constraint is imposed by normalising the solution
-    after the search.
+    Solver: SciPy differential evolution over the box [0, 1]^N. Each candidate
+    y is mapped to the simplex by Euclidean projection, the objective is
+    evaluated at P(y), and the weights returned are P(y*).
 
     References:
+        Carbonero-Ruz, M., Fernández-Navarro, F., Durán-Rosal, A. M., &
+        Pérez-Rodríguez, J. (2025). A hybrid optimization and data-driven
+        approach to understand the role of the risk-aversion profile parameter
+        in portfolio optimization problems with shorting constraints.
+        Operations Research Perspectives, 15, 100353.
+        https://doi.org/10.1016/j.orp.2025.100353
         Fernández-Navarro, F., Martínez-Nieto, L., Carbonero-Ruz, M., &
         Montero-Romero, T. (2021). Mean Squared Variance Portfolio: A
-        Mixed-Integer Linear Programming Formulation.
-        Mathematics, 9(3), 223. https://doi.org/10.3390/math9030223
+        Mixed-Integer Linear Programming Formulation. Mathematics, 9(3), 223.
+        Wang, W., & Carreira-Perpiñán, M. Á. (2013). Projection onto the
+        probability simplex: An efficient algorithm with a simple proof, and
+        an application. arXiv:1309.1541.
     """
+
+    excess_return_inputs = True
 
     def __init__(self, risk_aversion: float = 0.5, seed: int = 42):
         super().__init__(risk_aversion)
         self.name = f"Mean Squared Variance (lambda={risk_aversion})"
         self.seed = seed
         if not (0 <= risk_aversion <= 1):
-            raise ValueError("Normalized risk aversion must be in [0, 1]")
+            raise ValueError("Normalised risk aversion must be in [0, 1]")
 
-    def optimize_weights(self, expected_returns: np.ndarray,
-                         covariance_matrix: np.ndarray) -> np.ndarray:
+    def solve(self, expected_returns: np.ndarray, covariance_matrix: np.ndarray):
+        """Weights P(y*) and the result object of the differential evolution."""
         N = len(expected_returns)
         lam = self.lamb
-
-        # H is generally indefinite for 0 < lambda < 1: the problem is non-convex
         H = 2.0 * (lam * covariance_matrix
                    - (1.0 - lam) * np.outer(expected_returns, expected_returns))
 
-        # Differential evolution over the box [0, 1]^N; the budget constraint
-        # is imposed by normalising the returned vector (see MVN* in README).
+        def objective(y: np.ndarray) -> float:
+            w = project_simplex(y)
+            return 0.5 * w @ H @ w
+
         from scipy.optimize import differential_evolution
         result = differential_evolution(
-            lambda w: 0.5 * w @ H @ w,
+            objective,
             bounds=[(0.0, 1.0)] * N,
             seed=self.seed, maxiter=500, popsize=20, polish=True,
             tol=1e-8,
         )
-        w = np.maximum(result.x, 0.0)
-        total = np.sum(w)
-        return w / total if total > 1e-10 else np.ones(N) / N
+        return project_simplex(result.x), result
+
+    def optimize_weights(self, expected_returns: np.ndarray,
+                         covariance_matrix: np.ndarray) -> np.ndarray:
+        return self.solve(expected_returns, covariance_matrix)[0]
 
 
 class WeightConstrainedMV(MeanVariance):

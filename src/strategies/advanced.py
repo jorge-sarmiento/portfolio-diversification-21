@@ -43,14 +43,14 @@ class DiversifiedMeanVariance(BaseStrategy):
 
     Hyperparameters:
         - risk_aversion (λ): Variance penalty [0, ∞)
-        - diversification_factor (δ): Identity regularization [0, ∞)
+        - diversification_factor (δ): Identity regularisation [0, ∞)
     """
 
     def __init__(self,
                  risk_aversion: float = 1.0,
                  diversification_factor: float = 1.0):
         """
-        Initialize DMV strategy.
+        Initialise the DMV strategy.
 
         Args:
             risk_aversion: λ - variance penalty coefficient
@@ -163,6 +163,7 @@ class DMVYager(BaseStrategy):
             return x[:N]
         return np.ones(N) / N
 
+
 class DMVReturn(BaseStrategy):
     """
     DMV with return-weighted penalty (DMVR), Eq. (18) of the paper.
@@ -252,6 +253,7 @@ class DMVVars(BaseStrategy):
         w = solve_qp(H, f, A=A, b=b_eq, lb=lb, ub=ub, solver='clarabel')
         return w if w is not None else np.ones(N) / N
 
+
 class EWMV_Mixture(BaseStrategy):
     """
     Equally Weighted - Mean Variance Mixture (EWMV), Eq. (20) of the paper.
@@ -284,7 +286,7 @@ class EWMV_Mixture(BaseStrategy):
                  risk_aversion: float = 1.0,
                  mixture_factor: float = 0.5):
         """
-        Initialize EWMV mixture strategy.
+        Initialise the EWMV mixture strategy.
 
         Args:
             risk_aversion: λ - variance penalty for MV step
@@ -322,7 +324,7 @@ class EWMV_Mixture(BaseStrategy):
         w_ew = np.ones(N) / N
         w_final = self.mixture_factor * w_mv + (1 - self.mixture_factor) * w_ew
 
-        # Ensure normalization (numerical stability)
+        # Ensure normalisation (numerical stability)
         w_final = w_final / np.sum(w_final)
 
         return w_final

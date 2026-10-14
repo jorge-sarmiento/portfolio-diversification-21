@@ -2,189 +2,229 @@
 
 Replication code for:
 
-> Sarmiento-Laya, J., & Fernández-Navarro, F. *Portfolio Diversification Revisited: An
+> Sarmiento-Laya, J. R., & Fernández-Navarro, F. *Portfolio Diversification Revisited: An
 > Out-of-Sample Comparison of Twenty-One Strategies Across Asset Universes and Rebalancing
-> Frequencies.* Manuscript submitted to Mathematics, 2026.
+> Frequencies.* Mathematics, 2026.
 
-Twenty-one portfolio optimization strategies are evaluated out of sample on three asset
-universes (Dow Jones 30, Global ETFs, Technology equities) at monthly and daily rebalancing
-frequencies, under a single walk-forward protocol: Ledoit-Wolf shrinkage on a rolling
-estimation window, in-sample grid search, transaction costs of 10 basis points, and the
-Deflated Sharpe Ratio as the multiple-testing correction.
+## What the code replicates
 
-Running `main.py`, followed by the scripts listed below, reproduces every table and figure
-of the article.
+Twenty-one portfolio strategies are evaluated out of sample on eight asset universes, at
+monthly and daily rebalancing frequency, under one walk-forward protocol:
 
----
+- simple returns; Ledoit-Wolf covariance on a rolling estimation window of 60 months
+  (1,260 sessions at daily frequency);
+- hyperparameters selected once on 2013-01 to 2018-12 by the Sharpe ratio of a rolling
+  mini-backtest, then held fixed; MVN, solved by differential evolution, is calibrated
+  instead by its in-sample Sharpe ratio on all the data before 2019;
+- out-of-sample period 2019-01 to 2025-12 (84 months, 1,760 sessions);
+- transaction costs of 10 basis points per unit of turnover, measured against the weights
+  drifted by prices, deducted period by period;
+- Sharpe ratios on net returns in excess of the risk-free rate;
+- joint inference against the equally weighted portfolio (stationary bootstrap, SPA-type
+  test, Romano-Wolf adjusted p-values), rank summaries across universes and the Deflated
+  Sharpe Ratio.
 
-## Quick start
+| Universe | Assets | Source |
+|---|---|---|
+| Dow Jones 30 | 27 stocks (without DOW, V and WBA) | Yahoo Finance |
+| Tech Sector | 11 stocks (without PYPL) | Yahoo Finance |
+| Global ETFs | 14 multi-asset ETFs | Yahoo Finance |
+| Countries: Europe | 8 country ETFs | Yahoo Finance |
+| Countries: Asia-Pacific and Americas | 9 country ETFs | Yahoo Finance |
+| Commodities | 7 commodity ETFs | Yahoo Finance |
+| 10 Industries | 10 value-weighted industry portfolios | Kenneth French data library |
+| 30 Industries | 30 value-weighted industry portfolios | Kenneth French data library |
 
-```bash
-conda env create -f environment.yml     # exact solver stack used in the article
-conda activate portfolio-21
-# place the three price CSV files in data/ first (see data/README.md)
-python main.py                          # menu: mode 2, ALL datasets, ALL strategies
+All series are in US dollars, from January 2008 to December 2025; an asset is included only
+if it has a complete history over that period. The tickers are listed in `src/config.py`.
+
+### Strategies
+
+| Code in the output files | Name in the article |
+|---|---|
+| EW, GMV, GMR | EW, GMV, GMR |
+| MD | MaxDiv |
+| MV, SemiV | MV, SemiV |
+| MSV | MVN |
+| WLBC, WUBC | WLBC, WUBC |
+| WUBC_Alt | WCMV |
+| DMV, EWMV | DMV, EWMV |
+| DMV_Yager, DMV_Return, DMV_Vars | DMVY, DMVR, DMVV |
+| FSD, SSD | P-Dom, SSD-R |
+| CVaR, MAD | CVaR, MAD |
+| RP, HRP | RP, HRP |
+
+MVN minimises `λ w'Σw − (1 − λ)(w'μ)²` subject to `Σw = 1`, `w ≥ 0`, where `μ` and `Σ` are the
+annualised mean and covariance of the returns in excess of the risk-free rate. The problem
+is non-convex and is solved by differential evolution; each candidate is mapped to the
+simplex by Euclidean projection (`src/strategies/markowitz.py`).
+
+## Revised version
+
+This version of the code accompanies the revised manuscript. The changes below were made in
+response to the peer review of the first submission. The code and reference outputs of the
+original submission remain available at commit `f6b967a`.
+
+| What changed | Why |
+|---|---|
+| Eight asset universes instead of three, all observed from January 2008 to December 2025: country ETFs for Europe and for Asia-Pacific and the Americas, commodity ETFs, and the Kenneth French 10 and 30 industry portfolios were added | The reviewers asked for more asset classes (international equities, sector portfolios, commodities) and a longer sample; the industry portfolios are free of survivorship bias by construction |
+| Estimation window of 60 months (1,260 sessions) instead of 12, and the same calendar in every universe: calibration 2013–2018, out of sample 2019–2025 | The original samples gave between 18 and 33 monthly out-of-sample observations, set by the listing date of a few assets, and 12 months is too short to estimate the mean vector; every universe now has 84 monthly and 1,760 daily out-of-sample observations |
+| Simple returns instead of log returns | The weighted sum of log returns only approximates the portfolio return; with simple returns `w'r` is exact |
+| Sharpe ratios on returns in excess of the one-month US Treasury bill rate, in the evaluation, in the selection of hyperparameters and in the Deflated Sharpe Ratio | A zero risk-free rate lowers each Sharpe ratio by `rf/σ`, which depends on the volatility of the strategy, so it can change the ranking |
+| Turnover measured against the weights drifted by prices, with costs deducted period by period | With simple returns the weights drift between rebalancing dates, and the trades needed are those that restore the target weights |
+| Joint test of the twenty strategies against the equally weighted portfolio (stationary bootstrap, SPA-type test, Romano-Wolf adjusted p-values) | The Deflated Sharpe Ratio only corrects the selection within each strategy; the reviewers asked for a formal joint test across strategies |
+| Comparison across universes by ranks instead of the average Sharpe ratio | An average of Sharpe ratios across universes does not correspond to any portfolio an investor could hold |
+| Weight-bound combinations that admit no portfolio for a given number of assets are removed from the calibration grids | A combination with `N·l > 1` or `N·u < 1` has no feasible portfolio and must not compete in the calibration or count as a trial of the Deflated Sharpe Ratio |
+| MVN: each candidate of the differential evolution is projected onto the simplex, and the mean and covariance are those of excess returns | The original code searched the box [0, 1]^N and normalised the solution afterwards; projecting every candidate keeps the search on the feasible set of Eq. (9), and excess-return inputs follow Carbonero-Ruz et al. (2025) |
+| The soft return-floor LP, which the original code ran as a twenty-second strategy, is now computed only in `scripts/diagnostics/return_floor.py`, together with the hard floor | The article reports the return-floor family as a negative result and does not include it among the twenty-one strategies compared |
+| Scripts for the diagnostics of the article (Figure 1, Tables 10 and 11 and others), a test suite, and a data manifest with SHA-256 hashes | So that every result of the article can be reproduced and checked |
+
+## Repository structure
+
 ```
-
-Reproducing all three universes at both frequencies takes about six hours on a desktop
-machine. Results are written to `results/Run_<timestamp>/`.
-
-To check the installation first, answer the menu with `1`, `1`, `EW,GMV,MV` and `Y`: this
-runs three strategies on the Dow Jones 30 monthly panel in about a minute.
-
-Once the full run has finished:
-
-```bash
-python scripts/dominance_lp_tables.py --run-dir results/Run_<timestamp>          # Tables 8 and 10
-python scripts/build_paper_tables.py  --run-dir results/Run_<timestamp> --check  # Tables 1-7, 9, 10
-python scripts/verify_reproduction.py --run-dir results/Run_<timestamp>
+run.py                    command-line entry point: data, full run
+src/
+  config.py               universes, dates, strategy set, paths
+  data.py                 download, manifest check, returns and risk-free rate
+  engine.py               walk-forward engine: calibration and out-of-sample loop
+  runner.py               tasks, process parallelism, checkpoints
+  costs.py                turnover against drifted weights and transaction costs
+  grid.py                 feasibility of the weight-bound combinations of the grids
+  metrics.py              Deflated Sharpe Ratio
+  tables.py               metric tables of a run
+  inference.py            joint inference against EW
+  summary.py              rank summaries across universes
+  strategies/             the 21 strategies
+scripts/
+  postprocess.py          tables, inference, ranks and LaTeX tables of a run
+  tables/                 one script per LaTeX table
+  audit_fallbacks.py      dates on which a strategy holds 1/N
+  inference_size.py       size of the joint test at the observed serial correlation
+  check_mvn_solver.py     MVN solver against a parametric search on the efficient frontier
+  diagnostics/            diagnostics reported in the article (Figure 1, Tables 10 and 11, and others)
+tests/                    unit and integration tests
+data/MANIFEST.json        SHA-256 of the data files used in the article
 ```
-
-`build_paper_tables.py` writes the tables in the numbering of the article to
-`results/Run_<timestamp>/PAPER_TABLES/paper/` and, with `--check`, compares every cell with
-the value printed in the article. `verify_reproduction.py` compares the run with the
-reference outputs in `archive/`.
-
-Figure 1 is computed from the price data alone:
-
-```bash
-python scripts/lambda_sweep.py          # out-of-sample Sharpe ratio of MV over the λ grid
-python scripts/plot_figure1.py          # draws Figure 1 from archive/LAMBDA_SWEEP/
-```
-
-`plot_figure1.py --curves-dir results/lambda_sweep` draws it from the curves just computed.
-
----
-
-## Strategies
-
-`Code` is the identifier used in the output files; `Paper` is the label used in the article.
-
-| Block | Paper | Code | Objective | Solver |
-|-------|-------|------|-----------|--------|
-| 1 Benchmarks | EW | `EW` | Eq. (3), 1/N | closed form |
-| 1 Benchmarks | GMR | `GMR` | Eq. (4), argmax of μ | closed form |
-| 2 Mean–variance and extensions | GMV | `GMV` | Eq. (5) | CLARABEL |
-| 2 Mean–variance and extensions | MV | `MV` | Eq. (6) | CLARABEL |
-| 2 Mean–variance and extensions | SemiV | `SemiV` | Eqs. (7)–(8), semicovariance | CLARABEL |
-| 2 Mean–variance and extensions | MVN\* | `MSV` | Eq. (9), non-convex | differential evolution |
-| 3 Alternative risk measures | CVaR | `CVaR` | Eq. (11) | HiGHS |
-| 3 Alternative risk measures | MAD | `MAD` | Eq. (10) | HiGHS |
-| 4 Weight constraints | WLBC | `WLBC` | Eq. (12) | CLARABEL |
-| 4 Weight constraints | WUBC | `WUBC` | Eq. (13) | CLARABEL |
-| 4 Weight constraints | WCMV | `WUBC_Alt` | Eq. (14) | CLARABEL |
-| 5 Diversification incentives | MaxDiv | `MD` | Eq. (15) | trust-constr |
-| 5 Diversification incentives | DMV | `DMV` | Eq. (16) | CLARABEL |
-| 5 Diversification incentives | DMVY | `DMV_Yager` | Eq. (17), L1 penalty | CLARABEL |
-| 5 Diversification incentives | DMVR | `DMV_Return` | Eq. (18) | CLARABEL |
-| 5 Diversification incentives | DMVV | `DMV_Vars` | Eq. (19) | CLARABEL |
-| 5 Diversification incentives | EWMV | `EWMV` | Eq. (20), ex-post mixture | CLARABEL |
-| 6 Stochastic dominance | P-Dom | `FSD` | Eq. (21) | HiGHS |
-| 6 Stochastic dominance | SSD-R | `SSD` | Eq. (22), sorted cumsum | HiGHS |
-| 7 Risk-based allocation | RP | `RP` | Eq. (23), equal risk contribution | trust-constr |
-| 7 Risk-based allocation | HRP | `HRP` | hierarchical clustering | hierarchical procedure |
-
-A twenty-second strategy, the soft return-floor LP (`SRF_LP`), is computed by the pipeline
-but excluded from the results of the article, where it is reported as a negative result
-(Section 6.3). Its per-window diagnostics are written to
-`<dataset>/{MONTHLY,DAILY}/diagnostics/srf_lp/` inside the run directory.
-
-\* **MVN.** Eq. (9) is solved with SciPy's differential evolution over the box [0, 1]^N; the
-budget constraint is imposed by normalising the solution after the search.
-
----
 
 ## Data
 
-The price panels are **not** redistributed here: they come from Yahoo Finance, whose terms do
-not allow redistribution. `data/README.md` lists the three files, their SHA-256 hashes and the
-format expected by the pipeline.
+- Yahoo Finance: daily closes adjusted for dividends and splits (`yfinance`,
+  `auto_adjust=True`), 2007-12-01 to 2025-12-31. Monthly returns use the last close of
+  each month.
+- Kenneth French data library: value-weighted 10 and 30 industry portfolios, monthly and
+  daily, and the risk-free rate. The daily risk-free rate is the monthly rate divided by
+  the number of sessions of the month.
 
-- **Snapshot used in the article** (required to reproduce the published numbers): available
-  on reasonable request from the corresponding author, Jorge Sarmiento-Laya (jrsarmientolaya@al.uloyola.es).
-- **Re-download** (exploratory only): `python download_data.py` fetches the same tickers and
-  date ranges, but Yahoo revises adjusted closing prices retroactively, so the results will
-  differ from the published ones.
+`python run.py snapshot` downloads every file into `data/snapshot/`. The price files are
+not redistributed in this repository. `data/MANIFEST.json` records the SHA-256 of the
+files used in the article and `python run.py verify` compares a download against it.
+Adjusted prices downloaded at a later date can differ from the frozen files, because
+Yahoo Finance restates them after each dividend; results then differ accordingly. The data
+snapshot used for the reported results is available from the corresponding author upon
+reasonable request.
 
-Sample period: 2019-03-20 to 2023-12-29 (DJ30, 29 assets) and 2015-01-02 to 2023-12-29
-(ETFs, 14 assets; Tech, 12 assets). WBA was dropped from the Dow Jones 30 universe because of
-incomplete price data.
+## Installation
 
----
+```bash
+conda env create -f environment.yml
+conda activate portfolio-21
+```
 
-## Environment
+or, with pip:
 
-| | Exact reproduction | Approximate |
+```bash
+pip install -r requirements.txt
+```
+
+`environment.yml` pins the solver stack used for the article (Python 3.13, NumPy and SciPy
+linked to MKL). `requirements.txt` lists the same package versions for `pip`; those wheels
+link OpenBLAS, and results agree to about 1e-6.
+
+## Reproducing the results
+
+```bash
+python run.py snapshot                  # download the data
+python run.py verify                    # compare it with data/MANIFEST.json
+python run.py run                       # full experiment, outputs in results/main/
+python scripts/postprocess.py           # tables, inference, ranks, LaTeX tables
+python scripts/inference_size.py        # size of the joint test
+python scripts/check_mvn_solver.py      # MVN solver against the efficient-frontier search
+```
+
+`python run.py run --quick` runs the same pipeline on a few rows (about ten minutes) and
+`python -m unittest discover -s tests -t .` runs the tests. A run that is interrupted
+resumes from its checkpoints when the command is repeated. Set the environment variable
+`RESULTS_DIR` to write the outputs outside the repository folder.
+
+For each universe and frequency, `results/main/<universe>/<FREQUENCY>/` holds the gross and
+net out-of-sample return series, turnover, weights, selected hyperparameters and
+diagnostics of every strategy. `scripts/postprocess.py` writes:
+
+| Output in `results/main/latex/` | Content | Script in `scripts/tables/` |
 |---|---|---|
-| Install | `conda env create -f environment.yml` | `pip install -r requirements.txt` |
-| BLAS | MKL | OpenBLAS (PyPI wheels) |
-| Agreement with `archive/` | max\|Δ\| = 0 | differences of order 1e-6 in returns |
+| `tab_datasets.tex` | Universes, sample sizes and periods | `tab_datasets.py` |
+| `tab_performance_{monthly,daily}.tex` | Net Sharpe ratio by strategy and universe | `tab_performance.py` |
+| `tab_robustness_{monthly,daily}.tex` | Turnover, concentration, Deflated Sharpe Ratio | `tab_robustness.py` |
+| `tab_costs_{monthly,daily}.tex` | Sensitivity to transaction costs | `tab_costs.py` |
+| `tab_hyperparams_{monthly,daily}.tex` | Selected hyperparameters and effective grids | `tab_hyperparams.py` |
+| `tab_spearman.tex` | Rank correlation between monthly and daily results | `tab_spearman.py` |
+| `tab_inference_{monthly,daily}.tex` | Joint inference against EW | `tab_inference.py` |
+| `tab_ranks_{monthly,daily}.tex` | Ranks within universes and mean ranks | `tab_ranks.py` |
+| `tab_fallbacks.tex` | Optimiser failures and dates at 1/N | `tab_fallbacks.py` |
+| `tab_compute.tex` | Computing cost | `tab_compute.py` |
+| `tab_main_ranks.tex`, `tab_main_inference.tex` | Compact tables of the main text | `tab_main_ranks.py`, `tab_main_inference.py` |
 
-Python 3.13, CLARABEL 0.11.1 for convex quadratic programs, HiGHS 1.8.0 (bundled in SciPy
-1.16.3) for linear programs, and SciPy `differential_evolution` and `trust-constr` for the
-non-convex problems. The stochastic components (MVN and the RP warm start) use seed 42.
+The diagnostics of the article are run on a finished run and write to
+`results/main/diagnostics/`:
 
----
+| Output | Content | Script in `scripts/diagnostics/` |
+|---|---|---|
+| Figure 1: `fig_lambda_sweep.pdf` (and `.png`), `lambda_sweep_MONTHLY.csv`, `lambda_sweep_summary.csv` | Out-of-sample Sharpe ratio of MV against its risk-aversion parameter | `lambda_sweep.py` |
+| Table 10: `tab_dmvy_collapse.tex`, `dmvy_collapse_by_grid.csv` | DMVY: calibration dates at 1/N by grid combination | `dmvy_collapse.py` |
+| Table 11: `tab_ssd_sorting.tex`, `ssd_sorting.csv` | SSD with chronological and with sorted cumulative sums | `ssd_sorting.py` |
+| `return_floor.csv` | Return-floor family: infeasibility of the hard floor, concentration of the soft floor | `return_floor.py` |
+| `concentration_semiv_mvn.csv` | SemiV and MVN: dates with one asset above 99% and coincidence with GMR | `concentration.py` |
+| `mvn_total_vs_excess.csv`, `mvn_total_vs_excess_summary.csv` (`_exact` with `--solver exact`) | MVN with the moments of total returns, and the joint test with it in the place of MVN | `mvn_total_moments.py` |
 
-## What each artefact of the paper comes from
-
-| Artefact | Produced by | File |
-|----------|-------------|------|
-| **Tables 1–7, 9, 10, in the numbering of the article** | `scripts/build_paper_tables.py` | `PAPER_TABLES/paper/` |
-| Table 1, dataset characteristics | `main.py` | `PAPER_TABLES/Table_4_1_dataset_summary.csv` |
-| Table 1, skewness and kurtosis | `scripts/build_paper_tables.py` | `PAPER_TABLES/paper/T1.csv` |
-| Table 2, calibration grids | `main.py` | `PAPER_TABLES/Table_3_2_3_param_grids.csv` |
-| Table 3, monthly performance | `main.py` | `PAPER_TABLES/Table_5_1_oos_<dataset>.csv` |
-| Table 4, robustness (DSR, HHI, turnover) | `main.py` | `Table_5_4_dsr.csv`, `Table_5_2_concentration.csv`, `Table_5_1_oos_<dataset>.csv` |
-| Table 5, cost sensitivity | `main.py` | `PAPER_TABLES/Table_5_7_cost_sensitivity.csv` |
-| Table 6, daily performance | `main.py` | `<dataset>/DAILY/metrics_detailed.csv` |
-| Table 7, frequency sensitivity | `scripts/build_paper_tables.py` | `PAPER_TABLES/paper/T7.csv` |
-| Table 8, LP infeasibility rates | `scripts/dominance_lp_tables.py` | `PAPER_TABLES/dominance_lp/infeasibility_rates.csv` |
-| Table 9, selected hyperparameters | `main.py` | `<dataset>/MONTHLY/best_params.csv` |
-| Table 10, SSD sorting correction | `scripts/dominance_lp_tables.py` | `PAPER_TABLES/dominance_lp/ssd_hhi_correction.csv` |
-| Figure 1, MV Sharpe vs λ | `scripts/lambda_sweep.py`, `scripts/plot_figure1.py` | `figures/lambda_curve_*.png` |
-| Section 6.3, return-floor results | `main.py`, `scripts/dominance_lp_tables.py` | `diagnostics/srf_lp/`, `infeasibility_rates.csv` (HSD) |
-
----
-
-## Output structure
-
-```
-results/Run_<timestamp>/
-  {Dow_Jones_30,Global_ETFs,Tech_Sector}/
-    {MONTHLY,DAILY}/
-      best_params.csv          in-sample selected hyperparameters
-      oos_returns.csv          out-of-sample return series per strategy
-      oos_turnover.csv         out-of-sample turnover per strategy
-      metrics_detailed.csv     performance metrics per strategy
-      diagnostics/srf_lp/      per-window diagnostics of SRF_LP
-  PAPER_TABLES/                tables built from the run
-    dominance_lp/              Tables 8 and 10
-    paper/                     tables in the numbering of the article
+```bash
+python scripts/diagnostics/lambda_sweep.py
+python scripts/diagnostics/dmvy_collapse.py
+python scripts/diagnostics/ssd_sorting.py
+python scripts/diagnostics/return_floor.py
+python scripts/diagnostics/concentration.py
+python scripts/diagnostics/mvn_total_moments.py
 ```
 
-`archive/` holds the outputs of the reference run (`Run_20260716_190431`) used in the
-article, the λ-sweep curves behind Figure 1 (`LAMBDA_SWEEP/`), and the values printed in the
-article (`published_tables.json`).
+`mvn_total_moments.py` runs MVN again with total-return moments as the main version is run
+(lambda recalibrated in the static pass, differential evolution), which takes several hours;
+`--solver exact` is a quick alternative that solves both versions at the lambda of the run by a
+parametric search on the efficient frontier.
 
----
+Each table script can also be run on its own, for example
+`python scripts/tables/tab_ranks.py --run-dir results/main --freq MONTHLY`. The underlying
+CSV files are in `results/main/tables/`, `inference/` and `summary/`.
 
-## Protocol
+## Computing time
 
-- 70/30 in-sample / out-of-sample split, walk-forward with one rebalancing step per period.
-- Estimation window: 12 months (DJ30), 14 months (ETFs, Tech), 252–316 trading days at daily
-  frequency.
-- μ and Σ are annualised (×12 monthly, ×252 daily); Σ is shrunk with Ledoit-Wolf towards the
-  scaled identity target, in calibration and in evaluation alike.
-- Hyperparameters are selected once, by in-sample Sharpe ratio over a rolling mini-backtest,
-  and held fixed throughout the out-of-sample phase. MVN is calibrated statically over the
-  full in-sample segment, as stated in the article.
-- Portfolio returns are the linear combination of log returns; costs of 10 bps are deducted
-  period by period from turnover.
+The full experiment took 39.4 CPU hours on a 13th Gen Intel Core i7-13700HX (16 physical
+cores, 32 GB of memory, Windows 11): 3.6 hours for twenty strategies (0.7 hours of
+wall-clock time) and 35.8 hours for MVN (2.4 hours of wall-clock time), with 16 worker
+processes and one linear-algebra thread per process. `--workers N` sets the number of
+processes; it does not change any result.
 
----
+MVN is solved by a stochastic global search, and its weights can differ between two runs
+by amounts of the order of 1e-7 in the universes with ten or more assets. The other
+twenty strategies give identical series from run to run in the pinned environment.
 
 ## License
 
-MIT for the code, see [LICENSE](LICENSE). The price data is not distributed with this
-repository; see `data/README.md`.
+MIT. See `LICENSE`.
+
+## Citation
+
+See `CITATION.cff`. Please cite the article.
+
+## Contact
+
+Jorge Rafael Sarmiento-Laya, jorgesarmientol@gmail.com
+(institutional address: jrsarmientolaya@al.uloyola.es)

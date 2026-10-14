@@ -1,7 +1,6 @@
-# Solver stack used to produce the results of the article (Windows, conda defaults channel).
-# Reproduces them bit for bit. Build strings are pinned on purpose: a different build of
-# the same NumPy/SciPy version can change the linear algebra at the last bits. Installing
-# from PyPI instead (requirements.txt) links OpenBLAS and shifts returns by about 1e-6.
+# Solver stack used for the article (Windows, conda defaults channel). Build strings are
+# pinned on purpose: a different build of the same NumPy or SciPy version can change the
+# linear algebra in the last bits.
 #
 #   conda env create -f environment.yml
 #   conda activate portfolio-21
@@ -31,3 +30,5 @@ dependencies:
   - pip:
       - clarabel==0.11.1
       - qpsolvers==4.9.0
+      - yfinance==1.2.0
+      - requests==2.32.5

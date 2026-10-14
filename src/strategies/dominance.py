@@ -240,7 +240,7 @@ class MAD(BaseStrategy):
               1'w = 1
               w >= 0
 
-    For linprog (minimization): min  -mu'w + lambda * (1/T) * sum_t d_t
+    For linprog (minimisation): min  -mu'w + lambda * (1/T) * sum_t d_t
 
     Variables: x = [w (N), d (T)]  ->  N+T total.
     mu = (1/T) sum_t R_t  (sample mean from the estimation window).

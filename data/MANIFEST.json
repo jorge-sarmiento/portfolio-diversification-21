@@ -1,0 +1,57 @@
+{
+ "created": "2026-10-08 18:00:33",
+ "download_start": "2007-12-01",
+ "download_end": "2025-12-31",
+ "yahoo": "yfinance 1.2.0, auto_adjust=True, column Close",
+ "french_base_url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/",
+ "files": {
+  "10_Industry_Portfolios_CSV.zip": {
+   "sha256": "ebd937a4b995d821867aeb956a96f09a666386f38fa82516b7d1767ee4a49ae5",
+   "bytes": 118996
+  },
+  "10_Industry_Portfolios_daily_CSV.zip": {
+   "sha256": "12e33cce09517c9a2bb38cf75d43b5a15e65238848e864145d06d456e170161d",
+   "bytes": 934275
+  },
+  "30_Industry_Portfolios_CSV.zip": {
+   "sha256": "8380fadbf9b1eab98ecda389c3d4f0d62756e81b8a69a639d1e8a1331a10722a",
+   "bytes": 314316
+  },
+  "30_Industry_Portfolios_daily_CSV.zip": {
+   "sha256": "04a7a74fcd7c12e90461718e5ba8490e99d18c3e9323182b6c7a7b320e6cd34a",
+   "bytes": 2597362
+  },
+  "F-F_Research_Data_Factors_CSV.zip": {
+   "sha256": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
+   "bytes": 13065
+  },
+  "F-F_Research_Data_Factors_daily_CSV.zip": {
+   "sha256": "2f29e22546069914890a712680a6f81f3680ebc3543b52864484d209ca13a7db",
+   "bytes": 178184
+  },
+  "prices_Commodities.csv": {
+   "sha256": "1d550b1fedbc68e8fe0f45cc2e9df39c463d7c9104b7cb386cc2c9a256e4629c",
+   "bytes": 631996
+  },
+  "prices_Countries_APAC_Americas.csv": {
+   "sha256": "fc418b0f6bf9978320cf3a3bbf73cfd7bf0fb84c3f56202cc31d9ade4cbc7b99",
+   "bytes": 810242
+  },
+  "prices_Countries_Europe.csv": {
+   "sha256": "c9216f75fe1a2443ce7e650514e5ecd217d80290605c8e18c63b02bf22d2486b",
+   "bytes": 729550
+  },
+  "prices_DJ30.csv": {
+   "sha256": "0b29e8db10ddb63623c7691d22b6be7032415e5c049c5b1c0d385378f7d03310",
+   "bytes": 2300541
+  },
+  "prices_Global_ETFs.csv": {
+   "sha256": "ec181211ca8f0a93bcc159f4847e070743ca770551c1b42685d17de7b0582f3f",
+   "bytes": 1212573
+  },
+  "prices_Tech.csv": {
+   "sha256": "bd1971055c025377c5613dd9bd9b1088fe08a541a6666c8a2faa14d59db066b9",
+   "bytes": 969458
+  }
+ }
+}
